@@ -1,116 +1,245 @@
-# PersonalHF - Investment & Operations Tools
+# 🔧 LHCb AI Expert - Shifter Assistant RAG System
 
-This repository contains multiple applications for investment tracking and operational assistance.
+An intelligent RAG (Retrieval-Augmented Generation) system designed to assist LHCb shifters with real-time, context-aware help based on uploaded documentation and procedures.
 
-## 📈 Hedge Fund Application
-```bash 
-streamlit run hedge_fund_app.py
-```
-Personal project for tracking investments and making informed decisions.
+## ✨ Features
 
-## 🎉 What's Been Built
+### 📚 **Document Processing**
+- **Multi-format support**: PDF, HTML, TXT, Markdown files
+- **Smart encoding detection**: Handles international characters and legacy file formats
+- **Automatic text extraction**: Clean text extraction from various document formats
+- **Intelligent chunking**: Optimized text segmentation for better retrieval
 
-### 🔧 **Shifter Assistant RAG System** (`shifter_rag_app.py`)
-A complete RAG application with:
+### 🔍 **Advanced Search & RAG**
+- **Text-based search**: Fast, reliable keyword-based document retrieval
+- **Context-aware responses**: LLM responses enriched with relevant documentation
+- **Source attribution**: Track which documents provided the information
+- **Real-time processing**: Instant responses to shifter questions
 
-**Core Features:**
-- **Multi-format document ingestion**: PDF, HTML, TXT, Markdown
-- **Semantic search**: Uses sentence-transformers + FAISS for vector similarity
-- **Groq API integration**: Following your existing pattern from `mktaiagent`
-- **Real-time Q&A**: Context-aware responses using uploaded documentation
-
-**Advanced Memory System:**
-- **Conversation history**: Automatically stores all interactions
+### 🧠 **Memory System**
+- **Conversation history**: Remembers previous interactions for better context
 - **Important facts storage**: Manual addition of critical information
-- **Session context**: Maintains context within conversations
-- **Smart retrieval**: Uses past conversations to improve current responses
+- **Session context**: Maintains context within conversation sessions
+- **Smart retrieval**: Uses conversation history to improve responses
 
-### 📁 **Supporting Files Created:**
-1. `requirements_rag.txt` - All necessary dependencies
-2. `.streamlit/secrets.toml` - Groq API configuration template
-3. `SHIFTER_RAG_README.md` - Comprehensive documentation
-4. `test_rag_setup.py` - Setup verification script
-5. Updated main `README.md` - Overview of both applications
+### 🎯 **Shifter-Specific Features**
+- **Quick actions**: Pre-defined common queries for fast access
+- **Emergency procedures**: Prioritized access to critical information
+- **Step-by-step guidance**: Clear, actionable instructions
+- **Safety focus**: Highlights important safety considerations
 
-## 🚀 Quick Start
+## 🚀 Setup Instructions
+
+### 1. **Install Dependencies**
+
+First, install the required packages using conda (recommended for compatibility):
 
 ```bash
-# 1. Install dependencies
+# Core dependencies
+conda install -c conda-forge streamlit groq pandas numpy pypdf2 beautifulsoup4 -y
+
+# Additional packages via pip if needed
+pip install groq
+```
+
+**Alternative using pip:**
+```bash
 pip install -r requirements_rag.txt
-
-# 2. Test setup
-python test_rag_setup.py
-
-# 3. Configure Groq API key in .streamlit/secrets.toml
-# groq_api_key = "your_actual_key_here"
-
-# 4. Run the application
-streamlit run shifter_rag_app.py
 ```
 
-## 🧠 Memory Features Explained
+### 2. **Configure Groq API**
 
-### 1. **Automatic Conversation Memory**
-Every interaction is stored with:
-- User query + assistant response
-- Source documents used
-- Timestamp and session ID
-- Used for context in future conversations
+1. Get your API key from [Groq Console](https://console.groq.com/keys)
+2. Create/edit `.streamlit/secrets.toml`:
 
-### 2. **Important Facts Storage**
-Users can manually add critical information:
-- Categorized by type (safety, procedures, contacts)
-- Automatically retrieved when relevant
-- Persistent across sessions
-
-### 3. **Smart Context Building**
-The system builds context prompts by:
-- Finding relevant past conversations
-- Including applicable important facts
-- Combining with document search results
-- Feeding enriched context to Groq API
-
-### 4. **Advanced Memory Options** (in documentation)
-Ready-to-implement enhancements:
-- **Semantic memory search**: Use embeddings instead of keywords
-- **Automatic fact extraction**: LLM extracts important info from conversations
-- **User profile learning**: Adapts to user expertise and preferences
-- **Enhanced context injection**: Smarter memory integration
-
-## 🎯 How to Use for Shifters
-
-1. **Upload Documents**: Drag PDFs, manuals, procedures into the sidebar
-2. **Ask Questions**: Natural language queries like:
-   - "What should I do if the cooling system alarm goes off?"
-   - "How do I restart the data acquisition system?"
-   - "Who should I contact for hardware issues?"
-3. **Use Memory**: Enable conversation memory for context-aware responses
-4. **Add Important Facts**: Store critical information for future reference
-5. **Quick Actions**: Use preset buttons for common operational queries
-
-## 🔧 Architecture Highlights
-
-```
-Documents → Text Extraction → Chunking → Embeddings → Vector Store
-                                                            ↓
-User Query → Semantic Search + Memory → Context → Groq API → Response
+```toml
+# .streamlit/secrets.toml
+groq_api_key = "gsk_your_actual_groq_api_key_here"
 ```
 
-The system intelligently combines:
-- **Document knowledge** (from uploaded files)
-- **Conversation memory** (past interactions)
-- **Important facts** (manually stored info)
-- **Groq's reasoning** (LLM processing)
+⚠️ **Important**: Replace `"gsk_your_actual_groq_api_key_here"` with your actual Groq API key.
 
-## 🎨 UI Features
+### 3. **Test Your Setup**
 
-- **Clean, professional interface** with shifter-focused design
-- **Three main tabs**: Questions, Memory Management, System Status
-- **Real-time document processing** with progress indicators
-- **Source attribution** showing which documents provided information
-- **Memory visualization** with conversation history and important facts
+Run the diagnostic script to verify everything is working:
 
-The application is production-ready and follows your existing Groq API patterns from the `mktaiagent` project. It's designed specifically for operational environments where quick, accurate information retrieval is critical for safety and efficiency.
+```bash
+python test_rag_setup_simple.py
+```
 
-Would you like me to explain any specific part in more detail or help you set up additional features?
+Expected output:
+```
+✅ Core modules: 12/12 working
+✅ FAISS - OK
+✅ Groq API connection successful
+```
+
+### 4. **Start the Application**
+
+```bash
+streamlit run shifter_rag_app_simple.py
+```
+
+The application will be available at: **http://localhost:8501**
+
+## 📖 Usage Guide
+
+### **Document Management**
+1. **Upload Documents**: Use the sidebar to upload PDF, HTML, TXT, or Markdown files
+2. **Process Documents**: Click "Process Documents" to add them to the knowledge base
+3. **View Library**: Check document statistics and uploaded files in the sidebar
+
+### **Asking Questions**
+1. **Natural Language**: Ask questions in plain English:
+   - "What should I check during my shift?"
+   - "How do I handle a detector alarm?"
+   - "What are the emergency procedures?"
+
+2. **Quick Actions**: Use pre-defined buttons for common queries
+3. **Memory Context**: Enable conversation memory for better context (recommended)
+4. **Enter Key**: Press Enter or click "Get Help" to submit questions
+
+### **Memory Management**
+1. **View History**: Check previous conversations in the Memory tab
+2. **Add Facts**: Store important information that should be remembered
+3. **Categorize**: Organize facts by type (safety, procedures, contacts, etc.)
+
+## 🏗️ System Architecture
+
+### **Files Overview**
+- `shifter_rag_app_simple.py` - **Main application** (use this one)
+- `shifter_rag_app.py` - Advanced version with ML embeddings (may have compatibility issues)
+- `debug_rag.py` - Diagnostic script for troubleshooting
+- `test_rag_setup_simple.py` - Setup verification
+- `.streamlit/secrets.toml` - API key configuration
+- `requirements_rag.txt` - Python dependencies
+
+### **Data Flow**
+```
+Upload Documents → Text Extraction → Chunking → Text Search Index
+                                                        ↓
+User Query → Keyword Search → Retrieve Relevant Chunks → Groq API + Context → Response
+            ↗                                                              ↓
+Memory System ← Add to History ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
+```
+
+## 🔧 Technical Details
+
+### **Search Engine**
+- **Type**: Text-based keyword matching with Jaccard similarity
+- **Advantages**: Fast, reliable, no ML dependencies
+- **Performance**: Instant search results
+- **Encoding**: Handles multiple character encodings (UTF-8, Latin-1, Windows-1252, etc.)
+
+### **LLM Integration**
+- **Model**: `llama-3.1-8b-instant` (via Groq API)
+- **Context**: Combines document chunks + conversation memory
+- **Safety**: Prioritizes accuracy and operational safety
+
+### **Memory System**
+- **Conversation Storage**: Last 50 interactions
+- **Important Facts**: Categorized critical information
+- **Context Building**: Smart retrieval for enhanced responses
+
+## 🛠️ Troubleshooting
+
+### **Common Issues**
+
+#### "File does not exist" Error
+```bash
+# Make sure you're in the correct directory
+cd /path/to/lhcbAIxprt
+pwd  # Should show: /Users/uzzielperez/Desktop/lhcbAIxprt
+ls shifter_rag_app_simple.py  # Should show the file
+```
+
+#### Encoding Errors (e.g., 'utf-8' codec can't decode)
+✅ **Fixed**: The app now handles multiple encodings automatically
+- Supports UTF-8, Latin-1, Windows-1252, ISO-8859-1, CP1252
+- Gracefully handles problematic characters
+
+#### No Response from Queries
+1. Check Groq API key configuration
+2. Verify documents are uploaded and processed
+3. Try simple queries first (words that appear in your documents)
+
+#### Dependencies Issues
+```bash
+# For conda environments
+conda install -c conda-forge pypdf2 beautifulsoup4 -y
+
+# Test basic functionality
+python debug_rag.py
+```
+
+### **Debug Commands**
+
+```bash
+# Check system status
+python debug_rag.py
+
+# Test core dependencies
+python test_rag_setup_simple.py
+
+# View uploaded documents
+ls -la *.pkl  # Should show shifter_docs_simple.pkl
+```
+
+## 📊 Performance Tips
+
+- **Document Size**: Keep documents under 10MB for optimal processing
+- **Query Style**: Use descriptive queries that match document content
+- **Memory Usage**: Clear old conversations if memory usage becomes high
+- **File Formats**: HTML and PDF work best; ensure good text content quality
+
+## 🔒 Security & Privacy
+
+- **API Keys**: Stored locally in Streamlit secrets (not in code)
+- **Local Processing**: Documents processed and stored locally
+- **No External Data**: No document content sent to external services except Groq for responses
+- **Session Isolation**: Memory is session-based
+
+## 🎯 Best Practices for Shifters
+
+1. **Upload Comprehensive Documentation**: Include all relevant procedures, manuals, and guides
+2. **Use Descriptive Filenames**: Helps with source attribution and organization
+3. **Regular Updates**: Keep documentation current and remove outdated information
+4. **Memory Maintenance**: Add important facts and review stored information
+5. **Test Responses**: Verify critical procedures with actual documentation
+
+## 📝 Example Queries
+
+### **For PLUME System:**
+- "What should I check during my piquet shift?"
+- "How do I handle PLUME alarms?"
+- "What are the startup procedures?"
+
+### **For CALO System:**
+- "CALO detector troubleshooting steps"
+- "Emergency shutdown procedures for CALO"
+- "Who do I contact for CALO issues?"
+
+### **General Operations:**
+- "Daily inspection checklist"
+- "Emergency contact information"
+- "System restart procedures"
+
+## 🤝 Contributing
+
+To extend or improve the system:
+1. Test changes with realistic shifter scenarios
+2. Ensure backward compatibility
+3. Update documentation
+4. Verify encoding handling for international content
+
+## 📞 Support
+
+For issues or improvements:
+1. Check the troubleshooting section above
+2. Run `python debug_rag.py` for diagnostic information
+3. Verify your setup with `python test_rag_setup_simple.py`
+
+---
+
+*Built for LHCb operational excellence and shifter empowerment* 🔬⚡
 
