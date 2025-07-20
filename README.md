@@ -2,6 +2,16 @@
 
 An intelligent RAG (Retrieval-Augmented Generation) system designed to assist LHCb shifters with real-time, context-aware help based on uploaded documentation and procedures.
 
+The noob can do the following: 
+- **Upload twiki html files and some relevant e-logs** and process the documents
+- With the processed documents, the shifter can quickly retrieve the relevant answers to their questions and save time scouring through documents. So far, only the "CALO/PLUME documents have been tried. 
+
+Sample questions: 
+- Tell me the PLUME Piquet checklist
+- How to solve the 4 vertical cells problem?
+- How do I restart either the ECAL or the HCAL system?
+- Give me the numbers of the CALO and PLUME experts
+
 ## ✨ Features
 
 ### 📚 **Document Processing**
