@@ -118,7 +118,7 @@ The application will be available at: **http://localhost:8501**
 4. **Memory Integration**: Previous image analyses inform future text responses
 
 ### **Model Selection**
-- **Vision Models**: Choose from LLaMA 3.2 Vision (90B/11B) or LLaVA models
+- **Vision Models**: Choose from LLaMA 3.2 Vision (11B) or LLaVA models
 - **Text Models**: Select from LLaMA 3.1 variants or Mixtral for text-only queries
 - **Automatic Switching**: System uses appropriate model based on query type
 
@@ -148,10 +148,10 @@ Memory System ← Add to History (Text + Images) ← ← ← ← ← ← ← ←
 - **Image Formats**: JPG, PNG, GIF, BMP, WebP
 - **Size Limits**: 20MB maximum per image
 - **Processing**: Automatic resizing, format conversion, base64 encoding
-- **Models**: LLaMA 3.2 Vision (90B/11B), LLaVA 1.5 7B
+- **Models**: LLaMA 3.2 Vision (11B), LLaVA 1.5 7B
 
 ### **Enhanced LLM Integration**
-- **Vision Models**: `llama-3.2-90b-vision-preview` (recommended), `llama-3.2-11b-vision-preview`, `llava-v1.5-7b-4096`
+- **Vision Models**: `llama-3.2-11b-vision-preview` (recommended), `llava-v1.5-7b-4096`
 - **Text Models**: `llama-3.1-8b-instant`, `llama-3.1-70b-versatile`, `mixtral-8x7b-32768`
 - **Context**: Combines document chunks + image analysis + conversation memory
 - **Multimodal**: Supports both text-only and vision-enhanced queries

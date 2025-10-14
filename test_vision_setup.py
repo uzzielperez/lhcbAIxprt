@@ -119,9 +119,7 @@ def test_vision_models():
     """Test available vision models"""
     try:
         vision_models = {
-            "llama-3.2-90b-vision-preview": "LLaMA 3.2 90B Vision (Recommended)",
-            "llama-3.2-11b-vision-preview": "LLaMA 3.2 11B Vision",
-            "llava-v1.5-7b-4096": "LLaVA 1.5 7B"
+            "llava-v1.5-7b-4096": "LLaVA 1.5 7B (Only Available Vision Model)"
         }
         
         print("✅ Vision models configured:")

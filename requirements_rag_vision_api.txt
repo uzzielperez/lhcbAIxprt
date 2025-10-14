@@ -1,0 +1,11 @@
+streamlit
+groq
+pandas
+numpy
+PyPDF2
+beautifulsoup4
+Pillow
+requests
+# Hugging Face Vision Models (API-based - no local models needed)
+# No need for transformers, torch, torchvision, accelerate, bitsandbytes
+# All vision processing is done via Hugging Face Inference API

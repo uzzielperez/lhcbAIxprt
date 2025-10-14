@@ -7,3 +7,9 @@ beautifulsoup4
 sentence-transformers
 faiss-cpu
 Pillow
+# Hugging Face Vision Models
+transformers
+torch
+torchvision
+accelerate
+bitsandbytes

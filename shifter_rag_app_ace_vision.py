@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 from groq import Groq
@@ -42,10 +43,13 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
+# Import ACE framework
+from ace_framework import ACESystem, FeedbackEntry
+
 # Set page config
 st.set_page_config(
-    page_title="Shifter Assistant RAG System with Vision", 
-    page_icon="🔧", 
+    page_title="LHCb Shifter Assistant with ACE & Vision", 
+    page_icon="🧠", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -121,6 +125,27 @@ st.markdown("""
         padding: 20px;
         margin: 10px 0;
         color: #000000;
+    }
+    .ace-metric {
+        background-color: #f0f8ff;
+        border: 2px solid #2196F3;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+        color: #000000;
+    }
+    .knowledge-node {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 5px 0;
+    }
+    .relationship-item {
+        background-color: #e8f5e8;
+        border-left: 4px solid #28a745;
+        padding: 8px;
+        margin: 3px 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -957,16 +982,17 @@ Please provide a helpful response based on the available information. If the doc
         except Exception as e:
             return f"Error generating response: {str(e)}"
 
-# Initialize session state
+# Initialize session state with ACE
 if 'vision_rag_system' not in st.session_state:
-    st.session_state.vision_rag_system = VisionRAGSystem()
+    base_vision_rag = VisionRAGSystem()
+    st.session_state.vision_rag_system = ACESystem(base_vision_rag)
 
 if 'session_id' not in st.session_state:
     st.session_state.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 if 'selected_vision_model' not in st.session_state:
     # Prefer OpenAI vision if available; otherwise fall back to Hugging Face
-    vr = st.session_state.vision_rag_system
+    vr = st.session_state.vision_rag_system.adaptive_pipeline.base_rag
     oa_models = list(getattr(vr, 'openai_vision_models', {}).keys())
     if oa_models:
         st.session_state.selected_vision_model = oa_models[0]
@@ -979,11 +1005,13 @@ if 'selected_text_model' not in st.session_state:
 
 # Main App
 def main():
-    st.title("🔧 Shifter Assistant RAG System with Vision 👁️")
+    st.title("🧠 LHCb Shifter Assistant with ACE & Vision 👁️")
     st.markdown("""
-    *Intelligent assistance system for operational staff - Upload documentation and images, get instant, context-aware help*
+    *Autonomous self-improving AI assistant for operational staff - Upload documentation and images, get instant, context-aware help with continuous learning*
     
-    🆕 **New**: Vision capabilities! Upload images of equipment, error screens, diagrams, and get AI-powered analysis.
+    🧠 **ACE Framework**: Autonomous learning system that improves from every interaction
+    👁️ **Vision Capabilities**: Upload images of equipment, error screens, diagrams, and get AI-powered analysis
+    📚 **Shared Document Library**: Uses same documents as your existing vision app
     """)
     
     # Sidebar
@@ -993,15 +1021,15 @@ def main():
     st.sidebar.header("🤖 Model Selection")
     vision_model = st.sidebar.selectbox(
         "Vision Model",
-        options=list(st.session_state.vision_rag_system.vision_models.keys()),
-        format_func=lambda x: st.session_state.vision_rag_system.vision_models[x],
+        options=list(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.vision_models.keys()),
+        format_func=lambda x: st.session_state.vision_rag_system.adaptive_pipeline.base_rag.vision_models[x],
         key="selected_vision_model"
     )
     
     text_model = st.sidebar.selectbox(
         "Text Model",
-        options=list(st.session_state.vision_rag_system.text_models.keys()),
-        format_func=lambda x: st.session_state.vision_rag_system.text_models[x],
+        options=list(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.text_models.keys()),
+        format_func=lambda x: st.session_state.vision_rag_system.adaptive_pipeline.base_rag.text_models[x],
         key="selected_text_model"
     )
     
@@ -1086,38 +1114,86 @@ def main():
             if st.button("🔄 Process Documents"):
                 with st.spinner("Processing documents..."):
                     success_count = 0
+                    relearning_triggered = False
+                    
                     for uploaded_file in uploaded_files:
-                        doc_data = st.session_state.vision_rag_system.doc_processor.process_document(uploaded_file)
+                        doc_data = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.doc_processor.process_document(uploaded_file)
                         if doc_data:
-                            if st.session_state.vision_rag_system.search_engine.add_document(doc_data):
+                            # Add to version control
+                            st.session_state.vision_rag_system.context_engine.document_version_control.add_document_version(
+                                doc_id=doc_data['filename'],
+                                content=doc_data['content'],
+                                metadata={
+                                    'file_type': doc_data['file_type'],
+                                    'upload_time': doc_data['upload_time']
+                                }
+                            )
+                            
+                            # Check if relearning is needed
+                            if st.session_state.vision_rag_system.context_engine.document_version_control.should_trigger_relearning(doc_data['filename']):
+                                relearning_triggered = True
+                                st.warning(f"⚠️ Major changes detected in {doc_data['filename']}. System will relearn from this document.")
+                            
+                            if st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.add_document(doc_data):
                                 success_count += 1
                     
                     if success_count > 0:
-                        st.session_state.vision_rag_system.save_search_index()
+                        st.session_state.vision_rag_system.adaptive_pipeline.base_rag.save_search_index()
                         st.success(f"✅ Successfully processed {success_count} documents!")
+                        
+                        if relearning_triggered:
+                            st.info("🧠 System is automatically updating knowledge graph based on document changes...")
                     else:
                         st.error("❌ No documents were processed successfully.")
     
     # Document statistics
     st.sidebar.header("📊 Document Library")
-    total_docs = len(st.session_state.vision_rag_system.search_engine.documents)
-    total_chunks = len(st.session_state.vision_rag_system.search_engine.chunks)
-    total_images = len(st.session_state.vision_rag_system.memory_system.image_history)
+    total_docs = len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.documents)
+    total_chunks = len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.chunks)
+    total_images = len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.image_history)
     
     st.sidebar.metric("Documents", total_docs)
     st.sidebar.metric("Text Chunks", total_chunks)
     st.sidebar.metric("Images Analyzed", total_images)
     
+    # ACE Metrics
+    st.sidebar.header("🧠 ACE Metrics")
+    ace_metrics = st.session_state.vision_rag_system.get_ace_metrics()
+    st.sidebar.metric("Knowledge Nodes", ace_metrics["knowledge_graph_size"])
+    st.sidebar.metric("Relationships", ace_metrics["total_relationships"])
+    st.sidebar.metric("Adaptations", ace_metrics["adaptation_count"])
+    
+    # Document Refresh Recommendations
+    st.sidebar.header("📋 Documentation Needs Update")
+    refresh_recs = st.session_state.vision_rag_system.get_document_refresh_recommendations()
+    
+    if refresh_recs:
+        for rec in refresh_recs[:3]:  # Top 3
+            with st.sidebar.expander(f"🔴 {rec['topic'].upper()} ({rec['priority']})"):
+                st.write(rec['reason'])
+                st.write(f"Action: {rec['suggested_action']}")
+    else:
+        st.sidebar.success("✅ All documentation is up to date!")
+    
     if total_docs > 0:
         with st.sidebar.expander("📋 Document List"):
-            for i, doc in enumerate(st.session_state.vision_rag_system.search_engine.documents):
-                st.write(f"**{doc['filename']}**")
-                st.write(f"Type: {doc['file_type']} | Words: {doc['word_count']}")
-                st.write(f"Uploaded: {doc['upload_time'][:10]}")
+            for i, doc in enumerate(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.documents):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(f"**{doc['filename']}**")
+                    st.write(f"Type: {doc['file_type']} | Words: {doc['word_count']}")
+                    st.write(f"Uploaded: {doc['upload_time'][:10]}")
+                with col2:
+                    if doc['file_type'] in ['html', 'htm']:
+                        if st.button("👁️ View", key=f"view_{i}"):
+                            st.session_state.selected_html_doc = doc
+                    elif doc['file_type'] == 'pdf':
+                        if st.button("📄 Preview", key=f"preview_{i}"):
+                            st.session_state.selected_doc_for_analysis = doc
                 st.write("---")
     
     # Main content area
-    tab1, tab2, tab3, tab4 = st.tabs(["💬 Ask Questions", "👁️ Vision Analysis", "🧠 Memory & Context", "⚙️ System Status"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["💬 Ask Questions", "👁️ Vision Analysis", "🧠 Knowledge Graph", "🧠 Memory & Context", "📄 Document Viewer", "🔄 Self-Learning", "⚙️ System Status"])
     
     with tab1:
         st.header("Ask the Shifter Assistant")
@@ -1138,21 +1214,127 @@ def main():
                 submitted = st.form_submit_button("🚀 Get Help", type="primary", use_container_width=True)
             
             if submitted and user_query.strip():
-                with st.spinner("Searching documentation and generating response..."):
-                    response = st.session_state.vision_rag_system.generate_response(user_query, use_memory=use_memory)
+                with st.spinner("🧠 ACE system learning and generating response..."):
+                    # Use ACE-enhanced response generation
+                    response, ace_metrics = st.session_state.vision_rag_system.process_query_with_ace(user_query, use_memory=use_memory)
+                    
+                    # Analyze query patterns for document refresh recommendations
+                    response_quality = ace_metrics.get('confidence', 0.5)
+                    st.session_state.vision_rag_system.analyze_query_patterns(user_query, response_quality)
+                    
+                    # Store the response in session state for conversational interface
+                    st.session_state.last_text_response = {
+                        'query': user_query,
+                        'response': response,
+                        'ace_metrics': ace_metrics
+                    }
                     
                     # Display response with better styling
-                    st.markdown("### 🤖 Assistant Response")
+                    st.markdown("### 🧠 ACE-Enhanced Response")
                     st.markdown(f'<div class="response-container">{response}</div>', unsafe_allow_html=True)
                     
+                    # Show ACE metrics if learning occurred
+                    if ace_metrics["ace_applied"]:
+                        st.markdown("""
+                        <div class="evolution-indicator">
+                            <strong>🧠 ACE Learning Applied:</strong><br>
+                            • Knowledge graph updated<br>
+                            • Context refined<br>
+                            • System improved for future queries
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
                     # Show relevant documents
-                    search_results = st.session_state.vision_rag_system.search_engine.search(user_query, k=3)
+                    search_results = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.search(user_query, k=3)
                     if search_results:
                         with st.expander("📚 Relevant Documentation"):
                             for i, result in enumerate(search_results):
                                 st.write(f"**Source: {result['metadata']['filename']}** (Relevance: {result['score']:.3f})")
                                 st.write(result['content'][:300] + "..." if len(result['content']) > 300 else result['content'])
                                 st.write("---")
+        
+        # Text conversational interface (outside the form)
+        if 'last_text_response' in st.session_state:
+            st.markdown("---")
+            st.subheader("💬 Continue the Conversation")
+            
+            response_data = st.session_state.last_text_response
+            
+            # Feedback collection
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Was this response helpful?**")
+                helpful_rating = st.radio(
+                    "Rate the response:",
+                    ["Very Helpful (5)", "Helpful (4)", "Neutral (3)", "Not Helpful (2)", "Poor (1)"],
+                    key="text_rating"
+                )
+                rating = int(helpful_rating.split("(")[1].split(")")[0])
+            
+            with col2:
+                st.markdown("**Need clarification?**")
+                if st.button("🤔 Ask for clarification", key="clarify"):
+                    clarification_query = st.text_input(
+                        "What would you like me to clarify?",
+                        placeholder="e.g., 'Can you explain the restart procedure in more detail?'",
+                        key="clarify_input"
+                    )
+                    if clarification_query:
+                        with st.spinner("🧠 ACE system providing clarification..."):
+                            clarification_response, _ = st.session_state.vision_rag_system.process_query_with_ace(
+                                f"Clarification request: {clarification_query}", use_memory=True
+                            )
+                            st.markdown("**Clarification:**")
+                            st.markdown(f'<div class="response-container">{clarification_response}</div>', unsafe_allow_html=True)
+            
+            # Expert feedback
+            with st.expander("🔧 Expert Feedback (Optional)"):
+                expert_correction = st.text_area(
+                    "If you're an expert, provide corrections or improvements:",
+                    placeholder="e.g., 'The restart procedure should also include checking the cooling system first'",
+                    key="expert"
+                )
+                
+                improvement_suggestions = st.text_area(
+                    "Suggestions for improvement:",
+                    placeholder="e.g., 'Add more specific timing information'",
+                    key="improvement"
+                )
+                
+                if st.button("Submit Expert Feedback", key="submit_feedback"):
+                    if expert_correction or improvement_suggestions:
+                        # Collect feedback
+                        feedback_result = st.session_state.vision_rag_system.collect_feedback(
+                            query=response_data['query'],
+                            response=response_data['response'],
+                            user_rating=rating,
+                            expert_correction=expert_correction if expert_correction else None,
+                            improvement_suggestions=[improvement_suggestions] if improvement_suggestions else None
+                        )
+                        
+                        st.success("✅ Expert feedback collected! The system will learn from your input.")
+                        st.info(f"🧠 Learning result: {feedback_result['evolution_result']}")
+                        st.info(f"🔧 Adaptation actions: {', '.join(feedback_result['adaptation_actions'])}")
+            
+            # Follow-up questions
+            st.markdown("**💡 Follow-up Questions:**")
+            follow_up_questions = [
+                "Can you provide more details about the safety procedures?",
+                "What should I do if this doesn't work?",
+                "Are there any alternative solutions?",
+                "What are the warning signs to watch for?"
+            ]
+            
+            cols = st.columns(2)
+            for i, question in enumerate(follow_up_questions):
+                with cols[i % 2]:
+                    if st.button(f"❓ {question}", key=f"followup_{i}"):
+                        with st.spinner("🧠 ACE system answering follow-up..."):
+                            follow_up_response, _ = st.session_state.vision_rag_system.process_query_with_ace(
+                                question, use_memory=True
+                            )
+                            st.markdown(f"**Follow-up Answer:**")
+                            st.markdown(f'<div class="response-container">{follow_up_response}</div>', unsafe_allow_html=True)
         
         # Quick actions
         st.markdown("### 🔥 Quick Actions")
@@ -1168,8 +1350,8 @@ def main():
         for i, query in enumerate(quick_queries):
             with cols[i % 3]:
                 if st.button(query, key=f"quick_{i}"):
-                    with st.spinner("Getting information..."):
-                        response = st.session_state.vision_rag_system.generate_response(query)
+                    with st.spinner("🧠 ACE system learning..."):
+                        response, ace_metrics = st.session_state.vision_rag_system.process_query_with_ace(query)
                         st.markdown(f"**{query}**")
                         st.markdown(f'<div class="chat-message assistant-message">{response}</div>', unsafe_allow_html=True)
     
@@ -1187,7 +1369,7 @@ def main():
         if uploaded_image:
             # Process image
             with st.spinner("Processing image..."):
-                image_data = st.session_state.vision_rag_system.image_processor.process_image(uploaded_image)
+                image_data = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.image_processor.process_image(uploaded_image)
             
             if image_data:
                 st.success("✅ Image processed successfully!")
@@ -1232,17 +1414,37 @@ def main():
                     else:
                         query = vision_query.strip() if vision_query.strip() else "Please analyze this image and describe what you see. Provide any relevant guidance or recommendations."
                     
-                    with st.spinner("Analyzing image with AI vision model..."):
-                        vision_response = st.session_state.vision_rag_system.generate_vision_response(
+                    with st.spinner("🧠 ACE system analyzing image with vision AI..."):
+                        # Use ACE-enhanced vision analysis
+                        vision_response, ace_metrics = st.session_state.vision_rag_system.process_vision_query_with_ace(
                             query, image_data, use_memory=use_vision_memory
                         )
                         
+                        # Store the analysis in session state for conversational interface
+                        st.session_state.last_vision_analysis = {
+                            'query': query,
+                            'response': vision_response,
+                            'ace_metrics': ace_metrics,
+                            'image_data': image_data
+                        }
+                        
                         # Display vision response
-                        st.markdown("### 👁️ Vision Analysis Result")
+                        st.markdown("### 👁️ ACE-Enhanced Vision Analysis")
                         st.markdown(f'<div class="vision-response">{vision_response}</div>', unsafe_allow_html=True)
                         
+                        # Show ACE learning indicators
+                        if ace_metrics["ace_applied"]:
+                            st.markdown("""
+                            <div class="evolution-indicator">
+                                <strong>🧠 ACE Vision Learning Applied:</strong><br>
+                                • Visual knowledge integrated<br>
+                                • Context enhanced with image data<br>
+                                • System improved for future vision queries
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
                         # Show relevant documents if any
-                        search_results = st.session_state.vision_rag_system.search_engine.search(query, k=3)
+                        search_results = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.search(query, k=3)
                         if search_results:
                             with st.expander("📚 Relevant Documentation"):
                                 for i, result in enumerate(search_results):
@@ -1250,9 +1452,86 @@ def main():
                                     st.write(result['content'][:300] + "..." if len(result['content']) > 300 else result['content'])
                                     st.write("---")
         
+        # Vision conversational interface (outside the form)
+        if 'last_vision_analysis' in st.session_state:
+            st.markdown("---")
+            st.subheader("👁️ Vision Analysis Feedback")
+            
+            analysis = st.session_state.last_vision_analysis
+            
+            # Vision feedback collection
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Was the vision analysis accurate?**")
+                vision_rating = st.radio(
+                    "Rate the analysis:",
+                    ["Very Accurate (5)", "Accurate (4)", "Neutral (3)", "Inaccurate (2)", "Very Inaccurate (1)"],
+                    key="vision_rating"
+                )
+                vision_rating_num = int(vision_rating.split("(")[1].split(")")[0])
+            
+            with col2:
+                st.markdown("**Need more analysis?**")
+                if st.button("🔍 Analyze further", key="analyze_more"):
+                    further_analysis = st.text_input(
+                        "What specific aspect would you like me to analyze?",
+                        placeholder="e.g., 'Focus on the noisy cells in the bottom left'",
+                        key="further_analysis"
+                    )
+                    if further_analysis:
+                        with st.spinner("🧠 ACE system providing detailed analysis..."):
+                            detailed_response, _ = st.session_state.vision_rag_system.process_vision_query_with_ace(
+                                f"Detailed analysis request: {further_analysis}", analysis['image_data'], use_memory=True
+                            )
+                            st.markdown("**Detailed Analysis:**")
+                            st.markdown(f'<div class="vision-response">{detailed_response}</div>', unsafe_allow_html=True)
+            
+            # Expert vision feedback
+            with st.expander("🔧 Expert Vision Feedback (Optional)"):
+                vision_correction = st.text_area(
+                    "If you're an expert, provide corrections about the visual analysis:",
+                    placeholder="e.g., 'The system should focus on the 4 consecutive vertical cells pattern'",
+                    key="vision_expert"
+                )
+                
+                if st.button("Submit Vision Expert Feedback", key="submit_vision_feedback"):
+                    if vision_correction:
+                        # Collect vision feedback
+                        vision_feedback_result = st.session_state.vision_rag_system.collect_feedback(
+                            query=analysis['query'],
+                            response=analysis['response'],
+                            user_rating=vision_rating_num,
+                            expert_correction=vision_correction,
+                            improvement_suggestions=["Visual analysis improvement"]
+                        )
+                        
+                        st.success("✅ Vision expert feedback collected! The system will learn from your visual analysis expertise.")
+                        st.info(f"🧠 Learning result: {vision_feedback_result['evolution_result']}")
+                        st.info(f"🔧 Adaptation actions: {', '.join(vision_feedback_result['adaptation_actions'])}")
+            
+            # Vision-specific follow-up questions
+            st.markdown("**🔍 Vision Follow-up Questions:**")
+            vision_follow_up = [
+                "Can you identify the specific problem areas?",
+                "What equipment should I check first?",
+                "Are there any safety concerns visible?",
+                "What's the recommended action sequence?"
+            ]
+            
+            vision_cols = st.columns(2)
+            for i, question in enumerate(vision_follow_up):
+                with vision_cols[i % 2]:
+                    if st.button(f"👁️ {question}", key=f"vision_followup_{i}"):
+                        with st.spinner("🧠 ACE system analyzing follow-up..."):
+                            vision_follow_response, _ = st.session_state.vision_rag_system.process_vision_query_with_ace(
+                                question, analysis['image_data'], use_memory=True
+                            )
+                            st.markdown(f"**Vision Follow-up Answer:**")
+                            st.markdown(f'<div class="vision-response">{vision_follow_response}</div>', unsafe_allow_html=True)
+        
         # Image history
         st.markdown("### 📸 Recent Image Analyses")
-        image_history = st.session_state.vision_rag_system.memory_system.image_history
+        image_history = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.image_history
         
         if image_history:
             for i, analysis in enumerate(reversed(image_history[-5:])):  # Last 5 analyses
@@ -1264,11 +1543,123 @@ def main():
             st.info("No image analyses yet. Upload an image above to get started!")
     
     with tab3:
+        st.header("🧠 Knowledge Graph Visualization")
+        st.markdown("Explore the evolving knowledge graph that powers ACE's autonomous learning")
+        
+        # Knowledge graph stats
+        context_engine = st.session_state.vision_rag_system.context_engine
+        
+        # Calculate average confidence
+        import numpy as np
+        avg_confidence = np.mean([node.confidence for node in context_engine.knowledge_graph.values()]) if context_engine.knowledge_graph else 0
+        
+        st.markdown(f"""
+        <div class="ace-metric">
+            <strong>Knowledge Graph Statistics:</strong><br>
+            • Total nodes: {len(context_engine.knowledge_graph)}<br>
+            • Total relationships: {sum(len(rels) for rels in context_engine.relationships.values())}<br>
+            • Average confidence: {avg_confidence:.3f}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Knowledge graph nodes display
+        if context_engine.knowledge_graph:
+            st.subheader("📊 Knowledge Nodes")
+            
+            # Filter options
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                node_types = list(set([node.category for node in context_engine.knowledge_graph.values()]))
+                selected_type = st.selectbox("Filter by Type", ["All"] + node_types)
+            with col2:
+                min_confidence = st.slider("Min Confidence", 0.0, 1.0, 0.0, 0.1)
+            with col3:
+                sort_by = st.selectbox("Sort by", ["Confidence", "Created", "Updated", "Usage"])
+            
+            # Filter and sort nodes
+            filtered_nodes = []
+            for node_id, node in context_engine.knowledge_graph.items():
+                if selected_type == "All" or node.category == selected_type:
+                    if node.confidence >= min_confidence:
+                        filtered_nodes.append((node_id, node))
+            
+            # Sort nodes
+            if sort_by == "Confidence":
+                filtered_nodes.sort(key=lambda x: x[1].confidence, reverse=True)
+            elif sort_by == "Created":
+                filtered_nodes.sort(key=lambda x: x[1].created_at, reverse=True)
+            elif sort_by == "Updated":
+                filtered_nodes.sort(key=lambda x: x[1].updated_at, reverse=True)
+            elif sort_by == "Usage":
+                filtered_nodes.sort(key=lambda x: x[1].usage_count, reverse=True)
+            
+            # Display nodes
+            for node_id, node in filtered_nodes[:20]:  # Show top 20
+                with st.expander(f"🔗 {node.category.title()} - Confidence: {node.confidence:.2f}"):
+                    st.markdown(f"**Content:** {node.content[:200]}{'...' if len(node.content) > 200 else ''}")
+                    st.markdown(f"**Source:** {node.source}")
+                    st.markdown(f"**Created:** {node.created_at.strftime('%Y-%m-%d %H:%M')}")
+                    st.markdown(f"**Updated:** {node.updated_at.strftime('%Y-%m-%d %H:%M')}")
+                    st.markdown(f"**Usage Count:** {node.usage_count}")
+                    st.markdown(f"**Feedback Score:** {node.feedback_score:.2f}")
+                    
+                    # Show relationships
+                    if node_id in context_engine.relationships and context_engine.relationships[node_id]:
+                        st.markdown("**Connected to:**")
+                        for related_id in context_engine.relationships[node_id][:5]:  # Show first 5
+                            if related_id in context_engine.knowledge_graph:
+                                related_node = context_engine.knowledge_graph[related_id]
+                                st.markdown(f"• {related_node.category}: {related_node.content[:50]}...")
+        else:
+            st.info("No knowledge nodes yet. Start asking questions to build the knowledge graph!")
+        
+        # Visual knowledge graph (simplified)
+        st.subheader("🔗 Knowledge Graph Relationships")
+        if context_engine.relationships:
+            # Create a simple relationship visualization
+            relationship_data = []
+            for node_id, related_nodes in context_engine.relationships.items():
+                if related_nodes:
+                    for related_id in related_nodes:
+                        if related_id in context_engine.knowledge_graph:
+                            source_node = context_engine.knowledge_graph[node_id]
+                            target_node = context_engine.knowledge_graph[related_id]
+                            relationship_data.append({
+                                'source': f"{source_node.category}_{node_id[:8]}",
+                                'target': f"{target_node.category}_{related_id[:8]}",
+                                'source_type': source_node.category,
+                                'target_type': target_node.category
+                            })
+            
+            if relationship_data:
+                st.markdown("**Knowledge Graph Relationships:**")
+                for rel in relationship_data[:10]:  # Show first 10 relationships
+                    st.markdown(f"• {rel['source_type']} → {rel['target_type']}")
+            else:
+                st.info("No relationships found yet. The system will create connections as it learns.")
+        else:
+            st.info("No relationships yet. The system will create connections as it learns.")
+        
+        # Learning metrics
+        st.subheader("📈 Learning Metrics")
+        learning_metrics = context_engine.learning_metrics
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Knowledge Growth", f"{learning_metrics.knowledge_growth_rate:.2f}")
+        with col2:
+            st.metric("Accuracy Improvement", f"{learning_metrics.accuracy_improvement:.2f}")
+        with col3:
+            st.metric("Response Quality", f"{learning_metrics.response_quality_score:.2f}")
+        with col4:
+            st.metric("Total Interactions", learning_metrics.total_interactions)
+    
+    with tab4:
         st.header("🧠 Memory & Context Management")
         
         # Conversation history
         st.subheader("Recent Conversations")
-        conversations = st.session_state.vision_rag_system.memory_system.conversation_history[-10:]  # Last 10
+        conversations = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.conversation_history[-10:]  # Last 10
         
         if conversations:
             for conv in reversed(conversations):
@@ -1292,11 +1683,39 @@ def main():
             
             if st.button("Add Fact"):
                 if new_fact.strip():
-                    st.session_state.vision_rag_system.memory_system.add_important_fact(new_fact, fact_category)
+                    st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.add_important_fact(new_fact, fact_category)
                     st.success("✅ Fact added to memory!")
         
+        # Add 4-cells problem knowledge
+        with st.expander("🔧 Add 4-Cells Problem Knowledge"):
+            st.markdown("**Add specific operational knowledge about the 4-cells problem:**")
+            four_cells_fact = st.text_area(
+                "4-Cells Problem Response", 
+                value="When 4 consecutive vertical cells turn noisy like the examples below, restart the affected system (ECAL or HCAL), or only the specific board if you can find it without losing too much time of data taking with this problem. Report on the ProblemDQ with the affected run/s.",
+                height=100
+            )
+            
+            if st.button("Add 4-Cells Knowledge"):
+                if four_cells_fact.strip():
+                    # Add to memory system
+                    st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.add_important_fact(
+                        four_cells_fact, "troubleshooting"
+                    )
+                    
+                    # Also add to ACE knowledge graph for better learning
+                    ace_system = st.session_state.vision_rag_system
+                    ace_system.context_engine.add_context_node(
+                        content=four_cells_fact,
+                        category="4cells_problem",
+                        source="expert_knowledge",
+                        confidence=1.0
+                    )
+                    
+                    st.success("✅ 4-Cells problem knowledge added to ACE system!")
+                    st.info("🧠 This knowledge will now be used for future 4-cells problem analysis!")
+        
         # Display important facts
-        facts = st.session_state.vision_rag_system.memory_system.important_facts
+        facts = st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.important_facts
         if facts:
             for fact in reversed(facts[-10:]):  # Last 10 facts
                 st.markdown(f'<div class="memory-item"><strong>{fact["category"].title()}:</strong> {fact["fact"]}<br><small>{fact["timestamp"][:16]}</small></div>', unsafe_allow_html=True)
@@ -1307,24 +1726,125 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🧹 Clear Conversation History"):
-                st.session_state.vision_rag_system.memory_system.conversation_history = []
+                st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.conversation_history = []
                 st.success("Conversation history cleared!")
         
         with col2:
             if st.button("🖼️ Clear Image History"):
-                st.session_state.vision_rag_system.memory_system.image_history = []
+                st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.image_history = []
                 st.success("Image history cleared!")
     
-    with tab4:
+    with tab6:
+        st.header("🔄 Self-Learning & Document Management")
+        
+        # Document Refresh Recommendations
+        st.subheader("📋 Document Refresh Recommendations")
+        refresh_recs = st.session_state.vision_rag_system.get_document_refresh_recommendations()
+        
+        if refresh_recs:
+            for i, rec in enumerate(refresh_recs):
+                with st.expander(f"🔴 {rec['topic'].upper()} - {rec['priority'].upper()} Priority"):
+                    st.write(f"**Reason:** {rec['reason']}")
+                    st.write(f"**Suggested Action:** {rec['suggested_action']}")
+                    
+                    if st.button(f"Mark as Addressed", key=f"address_{i}"):
+                        st.success(f"✅ Marked {rec['topic']} as addressed")
+        else:
+            st.success("✅ No document refresh recommendations at this time!")
+        
+        # Contradiction Detection
+        st.subheader("⚠️ Knowledge Contradictions")
+        
+        # Check for contradictions in recent knowledge
+        contradiction_count = len(st.session_state.vision_rag_system.context_engine.contradiction_log)
+        
+        if contradiction_count > 0:
+            st.warning(f"Found {contradiction_count} potential contradictions in knowledge base")
+            
+            with st.expander("View Contradictions"):
+                for i, contradiction in enumerate(st.session_state.vision_rag_system.context_engine.contradiction_log[-5:]):
+                    st.write(f"**Contradiction {i+1}:**")
+                    st.write(f"Timestamp: {contradiction['timestamp']}")
+                    st.write(f"Reason: {contradiction.get('reason', 'Unknown')}")
+                    if 'existing_node' in contradiction:
+                        st.write(f"Conflicts with: {contradiction['existing_node']}")
+        else:
+            st.success("✅ No contradictions detected in knowledge base!")
+        
+        # Confidence Decay Management
+        st.subheader("📉 Knowledge Confidence Management")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Apply Confidence Decay"):
+                with st.spinner("Applying confidence decay to old knowledge..."):
+                    st.session_state.vision_rag_system.apply_confidence_decay()
+                    st.success("✅ Confidence decay applied to old knowledge!")
+        
+        with col2:
+            if st.button("Review Low Confidence Knowledge"):
+                low_confidence_nodes = [
+                    node for node in st.session_state.vision_rag_system.context_engine.knowledge_graph.values()
+                    if node.confidence < 0.3
+                ]
+                
+                if low_confidence_nodes:
+                    st.warning(f"Found {len(low_confidence_nodes)} low-confidence knowledge nodes")
+                    for node in low_confidence_nodes[:3]:
+                        st.write(f"• {node.content[:100]}... (Confidence: {node.confidence:.2f})")
+                else:
+                    st.success("✅ All knowledge nodes have good confidence levels!")
+        
+        # Multimodal Learning Status
+        st.subheader("👁️ Multimodal Learning Status")
+        
+        visual_patterns = len(st.session_state.vision_rag_system.multimodal_learning_engine.visual_patterns)
+        text_visual_mappings = len(st.session_state.vision_rag_system.multimodal_learning_engine.text_visual_mappings)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Visual Patterns Learned", visual_patterns)
+        with col2:
+            st.metric("Text-Visual Mappings", text_visual_mappings)
+        
+        if visual_patterns > 0:
+            st.info("🧠 System has learned visual patterns from expert feedback!")
+        else:
+            st.info("💡 Upload images with expert corrections to enable visual learning!")
+        
+        # System Learning Actions
+        st.subheader("🔧 Learning Actions")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🧠 Trigger Knowledge Graph Update"):
+                with st.spinner("Updating knowledge graph..."):
+                    # Apply any pending updates
+                    st.session_state.vision_rag_system.apply_confidence_decay()
+                    st.success("✅ Knowledge graph updated!")
+        
+        with col2:
+            if st.button("📊 Generate Learning Report"):
+                with st.spinner("Generating learning report..."):
+                    ace_metrics = st.session_state.vision_rag_system.get_ace_metrics()
+                    
+                    st.markdown("### 📊 Learning Report")
+                    st.write(f"**Knowledge Nodes:** {ace_metrics['knowledge_graph_size']}")
+                    st.write(f"**Relationships:** {ace_metrics['total_relationships']}")
+                    st.write(f"**Adaptations:** {ace_metrics['adaptation_count']}")
+                    st.write(f"**Contradictions:** {len(st.session_state.vision_rag_system.context_engine.contradiction_log)}")
+                    st.write(f"**Visual Patterns:** {visual_patterns}")
+    
+    with tab7:
         st.header("⚙️ System Status")
         
         # API status
         st.subheader("🔌 API Configuration")
         
         # Groq API status (for text models)
-        if st.session_state.vision_rag_system.groq_client:
+        if st.session_state.vision_rag_system.adaptive_pipeline.base_rag.groq_client:
             st.success("✅ Groq API: Connected (Text Models)")
-            st.info(f"🤖 **Text Model:** {st.session_state.vision_rag_system.text_models[st.session_state.selected_text_model]}")
+            st.info(f"🤖 **Text Model:** {st.session_state.vision_rag_system.adaptive_pipeline.base_rag.text_models[st.session_state.selected_text_model]}")
         else:
             st.warning("⚠️ Groq API: Not configured (Text models unavailable)")
             st.info("Add your Groq API key to `.streamlit/secrets.toml`:")
@@ -1336,7 +1856,7 @@ def main():
         if hf_info.get("api_configured"):
             st.success("✅ Hugging Face API: Connected (Vision Models)")
             if st.session_state.selected_vision_model:
-                st.info(f"👁️ **Vision Model:** {st.session_state.vision_rag_system.vision_models[st.session_state.selected_vision_model]}")
+                st.info(f"👁️ **Vision Model:** {st.session_state.vision_rag_system.adaptive_pipeline.base_rag.vision_models[st.session_state.selected_vision_model]}")
         else:
             st.warning("⚠️ Hugging Face API: Not configured (Vision models unavailable)")
             st.info("Add your Hugging Face API key to `.streamlit/secrets.toml`")
@@ -1344,18 +1864,18 @@ def main():
         # Search engine status
         st.subheader("🔍 Search Engine Status")
         st.info("ℹ️ Using simplified text search (no ML dependencies)")
-        st.metric("Total Documents", len(st.session_state.vision_rag_system.search_engine.documents))
-        st.metric("Text Chunks", len(st.session_state.vision_rag_system.search_engine.chunks))
+        st.metric("Total Documents", len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.documents))
+        st.metric("Text Chunks", len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.search_engine.chunks))
         
         # Vision capabilities
         st.subheader("👁️ Vision Capabilities")
         st.success("✅ Vision processing enabled")
-        st.metric("Images Analyzed", len(st.session_state.vision_rag_system.memory_system.image_history))
+        st.metric("Images Analyzed", len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.image_history))
         
         # Memory status
         st.subheader("🧠 Memory Status")
-        st.metric("Conversations", len(st.session_state.vision_rag_system.memory_system.conversation_history))
-        st.metric("Important Facts", len(st.session_state.vision_rag_system.memory_system.important_facts))
+        st.metric("Conversations", len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.conversation_history))
+        st.metric("Important Facts", len(st.session_state.vision_rag_system.adaptive_pipeline.base_rag.memory_system.important_facts))
         
         # System actions
         st.subheader("🔧 System Actions")
@@ -1372,6 +1892,136 @@ def main():
             if st.button("🔄 Reload Search Index"):
                 st.session_state.vision_rag_system.load_search_index()
                 st.success("✅ Search index reloaded!")
+    
+    with tab6:
+        st.header("📄 Document Viewer & Improvement Suggestions")
+        
+        # HTML Document Viewer
+        if 'selected_html_doc' in st.session_state and st.session_state.selected_html_doc:
+            doc = st.session_state.selected_html_doc
+            st.subheader(f"👁️ Viewing: {doc['filename']}")
+            
+            # Display HTML content
+            st.markdown("**HTML Content:**")
+            components.html(doc['content'], height=600, scrolling=True)
+            
+            # Document analysis and suggestions
+            st.markdown("---")
+            st.subheader("🔍 Document Analysis & Improvement Suggestions")
+            
+            # Analyze document content
+            content = doc['content']
+            word_count = len(content.split())
+            char_count = len(content)
+            
+            # Basic metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Word Count", word_count)
+            with col2:
+                st.metric("Character Count", char_count)
+            with col3:
+                st.metric("File Type", doc['file_type'].upper())
+            
+            # Generate improvement suggestions using ACE
+            if st.button("🧠 Generate Improvement Suggestions"):
+                with st.spinner("Analyzing document with ACE system..."):
+                    # Create analysis prompt
+                    analysis_prompt = f"""
+                    Analyze this HTML document for LHCb shifter operations and provide improvement suggestions:
+                    
+                    Document: {doc['filename']}
+                    Content: {content[:2000]}...
+                    
+                    Please provide:
+                    1. Content quality assessment
+                    2. Missing information suggestions
+                    3. Structure improvements
+                    4. Clarity enhancements
+                    5. Operational relevance
+                    """
+                    
+                    # Use ACE system to analyze
+                    analysis_response, ace_metrics = st.session_state.vision_rag_system.process_query_with_ace(
+                        analysis_prompt, use_memory=True
+                    )
+                    
+                    st.markdown("**📊 Document Analysis:**")
+                    st.markdown(f'<div class="response-container">{analysis_response}</div>', unsafe_allow_html=True)
+                    
+                    # Show ACE learning indicators
+                    if ace_metrics.get('ace_applied', False):
+                        st.info("🧠 ACE system applied learning to document analysis")
+                        if ace_metrics.get('expert_knowledge_used', False):
+                            st.success("✅ Expert knowledge used in analysis")
+        
+        # PDF Document Preview
+        elif 'selected_doc_for_analysis' in st.session_state and st.session_state.selected_doc_for_analysis:
+            doc = st.session_state.selected_doc_for_analysis
+            st.subheader(f"📄 Analyzing: {doc['filename']}")
+            
+            # Show document metadata
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Word Count", doc['word_count'])
+            with col2:
+                st.metric("File Size", f"{doc['size']:,} bytes")
+            with col3:
+                st.metric("Upload Date", doc['upload_time'][:10])
+            
+            # Show document content preview
+            st.markdown("**Content Preview:**")
+            content_preview = doc['content'][:1000] + "..." if len(doc['content']) > 1000 else doc['content']
+            st.text_area("Document Content", content_preview, height=300, disabled=True)
+            
+            # Generate improvement suggestions
+            if st.button("🧠 Analyze PDF Document"):
+                with st.spinner("Analyzing PDF document with ACE system..."):
+                    analysis_prompt = f"""
+                    Analyze this PDF document for LHCb shifter operations:
+                    
+                    Document: {doc['filename']}
+                    Content: {doc['content'][:2000]}...
+                    
+                    Provide improvement suggestions for:
+                    1. Content organization
+                    2. Missing procedures
+                    3. Clarity improvements
+                    4. Operational relevance
+                    """
+                    
+                    analysis_response, ace_metrics = st.session_state.vision_rag_system.process_query_with_ace(
+                        analysis_prompt, use_memory=True
+                    )
+                    
+                    st.markdown("**📊 Document Analysis:**")
+                    st.markdown(f'<div class="response-container">{analysis_response}</div>', unsafe_allow_html=True)
+        
+        # Document improvement suggestions
+        st.markdown("---")
+        st.subheader("💡 General Document Improvement Tips")
+        
+        improvement_tips = [
+            "**Structure**: Use clear headings and sections for easy navigation",
+            "**Procedures**: Include step-by-step instructions with safety warnings",
+            "**Diagrams**: Add visual aids for complex procedures",
+            "**Troubleshooting**: Include common problems and solutions",
+            "**Contacts**: List relevant personnel and emergency contacts",
+            "**Updates**: Include version numbers and last updated dates",
+            "**Accessibility**: Use clear language and avoid jargon",
+            "**Searchability**: Include relevant keywords and tags"
+        ]
+        
+        for tip in improvement_tips:
+            st.markdown(f"• {tip}")
+        
+        # Clear selection buttons
+        if st.button("🔄 Clear Document Selection"):
+            if 'selected_html_doc' in st.session_state:
+                del st.session_state.selected_html_doc
+            if 'selected_doc_for_analysis' in st.session_state:
+                del st.session_state.selected_doc_for_analysis
+            st.success("Document selection cleared!")
 
 if __name__ == "__main__":
     main()

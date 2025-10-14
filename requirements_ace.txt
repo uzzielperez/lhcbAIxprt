@@ -1,0 +1,44 @@
+# Core dependencies for LHCb Shifter Assistant with ACE
+streamlit>=1.28.0
+pandas>=1.5.0
+numpy>=1.24.0
+groq>=0.4.0
+
+# Document processing
+PyPDF2>=3.0.0
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+
+# Data structures and utilities
+dataclasses-json>=0.6.0
+pathlib2>=2.3.0
+
+# Visualization and analytics
+matplotlib>=3.6.0
+plotly>=5.15.0
+seaborn>=0.12.0
+
+# Machine learning and NLP (optional for advanced features)
+scikit-learn>=1.3.0
+nltk>=3.8.0
+spacy>=3.6.0
+
+# Database and storage
+sqlite3  # Built into Python
+pickle-mixin>=1.0.2
+
+# API clients
+requests>=2.31.0
+httpx>=0.24.0
+
+# Development and testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Optional: Advanced features
+# transformers>=4.30.0  # For advanced NLP
+# torch>=2.0.0  # For deep learning features
+# openai>=1.0.0  # For GPT integration
+# anthropic>=0.3.0  # For Claude integration
