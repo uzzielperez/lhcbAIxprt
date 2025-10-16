@@ -134,7 +134,7 @@ def test_vision_models():
 
 def main():
     """Run all tests"""
-    print("🔧 LHCb AI Expert - Vision RAG Setup Test")
+    print("🔧  AI Expert - Vision RAG Setup Test")
     print("=" * 50)
     print(f"Test run: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()

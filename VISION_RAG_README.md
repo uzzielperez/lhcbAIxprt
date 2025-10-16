@@ -1,6 +1,6 @@
-# 🔧👁️ LHCb AI Expert - Shifter Assistant RAG System with Vision
+# 🔧👁️  AI Expert - Shifter Assistant RAG System with Vision
 
-An intelligent RAG (Retrieval-Augmented Generation) system with **vision capabilities** designed to assist LHCb shifters with real-time, context-aware help based on uploaded documentation AND visual analysis of images, diagrams, error screens, and equipment photos.
+An intelligent RAG (Retrieval-Augmented Generation) system with **vision capabilities** designed to assist  shifters with real-time, context-aware help based on uploaded documentation AND visual analysis of images, diagrams, error screens, and equipment photos.
 
 ## 🆕 What's New: Vision Capabilities
 
@@ -277,4 +277,4 @@ For issues or improvements:
 
 ---
 
-*Enhanced with AI Vision for LHCb operational excellence and shifter empowerment* 🔬⚡👁️
+*Enhanced with AI Vision for  operational excellence and shifter empowerment* 🔬⚡👁️

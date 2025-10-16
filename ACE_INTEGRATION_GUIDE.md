@@ -1,8 +1,8 @@
-# 🧠 ACE Integration Guide for LHCb RAG System
+# 🧠 ACE Integration Guide for  RAG System
 
 ## Overview
 
-This guide explains how to integrate the **Agentic Context Engineering (ACE)** framework with your existing LHCb Shifter Assistant RAG system. ACE transforms your static RAG system into an autonomous, self-improving AI assistant.
+This guide explains how to integrate the **Agentic Context Engineering (ACE)** framework with your existing  Shifter Assistant RAG system. ACE transforms your static RAG system into an autonomous, self-improving AI assistant.
 
 ## 🚀 Quick Integration
 
@@ -106,7 +106,7 @@ if 'ace_system' not in st.session_state:
 
 # Main query interface
 def main():
-    st.title("🧠 LHCb Shifter Assistant with ACE")
+    st.title("🧠  Shifter Assistant with ACE")
     
     # Query input
     query = st.text_area("Ask a question:")
@@ -150,7 +150,7 @@ from ace_framework import ACESystem
 from shifter_rag_app_simple import ShifterRAGSystem
 
 def main():
-    st.title("🧠 LHCb Shifter Assistant with ACE")
+    st.title("🧠  Shifter Assistant with ACE")
     
     # Initialize ACE system
     if 'ace_system' not in st.session_state:
@@ -405,4 +405,4 @@ def debug_ace_system():
 
 ---
 
-*Transform your LHCb RAG system into an autonomous, self-improving AI assistant with ACE!* 🧠⚡
+*Transform your  RAG system into an autonomous, self-improving AI assistant with ACE!* 🧠⚡

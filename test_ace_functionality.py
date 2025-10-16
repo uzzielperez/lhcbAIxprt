@@ -41,7 +41,7 @@ def test_knowledge_graph_operations(ace_system):
     print("\n🧪 Test 2: Knowledge Graph Operations")
     try:
         # Test adding context nodes
-        test_content = "Test operational procedure for LHCb equipment"
+        test_content = "Test operational procedure for  equipment"
         ace_system.context_engine.add_context_node(
             content=test_content,
             category="test_procedure",
@@ -55,7 +55,7 @@ def test_knowledge_graph_operations(ace_system):
         print(f"✅ Knowledge graph size: {initial_size}")
         
         # Test finding relevant nodes
-        relevant_nodes = ace_system.context_engine._find_relevant_nodes("LHCb equipment")
+        relevant_nodes = ace_system.context_engine._find_relevant_nodes(" equipment")
         print(f"✅ Found {len(relevant_nodes)} relevant nodes")
         
         return True

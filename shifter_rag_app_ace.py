@@ -45,7 +45,7 @@ from ace_framework import ACESystem, FeedbackEntry
 
 # Set page config
 st.set_page_config(
-    page_title="LHCb Shifter Assistant with ACE", 
+    page_title=" Shifter Assistant with ACE", 
     page_icon="🧠", 
     layout="wide",
     initial_sidebar_state="expanded"
@@ -781,7 +781,7 @@ st.session_state.ace_rag_system.load_ace_state("shifter_docs_ace")
 def main():
     st.markdown("""
     <div class="ace-header">
-        <h1>🧠 LHCb Shifter Assistant with Agentic Context Engineering (ACE)</h1>
+        <h1>🧠  Shifter Assistant with Agentic Context Engineering (ACE)</h1>
         <p>Autonomous self-improving RAG system that learns and evolves from user interactions</p>
     </div>
     """, unsafe_allow_html=True)

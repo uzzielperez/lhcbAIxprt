@@ -48,7 +48,7 @@ from ace_framework import ACESystem, FeedbackEntry
 
 # Set page config
 st.set_page_config(
-    page_title="LHCb Shifter Assistant with ACE & Vision", 
+    page_title=" Shifter Assistant with ACE & Vision", 
     page_icon="🧠", 
     layout="wide",
     initial_sidebar_state="expanded"
@@ -593,7 +593,7 @@ class VisionRAGSystem:
         }
         
         self.text_models = {
-            "llama-3.1-8b-instant": "LLaMA 3.1 8B Instant (Default)",
+            "llama-3.1-8b-instant": "LLaMA 3.1 8B Instant",
             "llama-3.1-70b-versatile": "LLaMA 3.1 70B Versatile",
             "mixtral-8x7b-32768": "Mixtral 8x7B"
         }
@@ -771,7 +771,7 @@ Please be concise and actionable."""
                 model=model_key,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=1200
+                max_tokens=4000
             )
 
             assistant_response = resp.choices[0].message.content
@@ -823,7 +823,7 @@ Please be concise and actionable."""
 
             resp = self.anthropic_client.messages.create(
                 model=model_key,
-                max_tokens=1200,
+                max_tokens=4000,
                 temperature=0.3,
                 messages=[{"role": "user", "content": content}]
             )
@@ -869,7 +869,7 @@ Your role is to:
 5. Suggest who to contact or what resources to use when needed
 6. Learn from previous conversations to provide better assistance
 
-Always be concise but complete, and prioritize safety and accuracy."""
+IMPORTANT: Focus ONLY on the specific question asked. Do not mention unrelated problems or procedures unless directly relevant to the user's question. If the user asks about general procedures, provide general guidance. If they ask about specific problems, provide specific solutions. Always be concise but complete, and prioritize safety and accuracy."""
 
             # Prepare user message with image
             user_content = [
@@ -900,7 +900,7 @@ Please analyze the provided image and provide a helpful response based on both t
                     {"role": "user", "content": user_content}
                 ],
                 temperature=0.3,
-                max_tokens=1500
+                max_tokens=4000
             )
             
             assistant_response = response.choices[0].message.content
@@ -948,16 +948,29 @@ Your role is to:
 4. Suggest who to contact or what resources to use when your knowledge isn't sufficient
 5. Learn from previous conversations to provide better assistance
 
-Always be concise but complete, and prioritize safety and accuracy."""
+IMPORTANT: Focus ONLY on the specific question asked. Do not mention unrelated problems or procedures unless directly relevant to the user's question. If the user asks about general procedures, provide general guidance. If they ask about specific problems, provide specific solutions. Always be concise but complete, and prioritize safety and accuracy."""
 
-            user_prompt = f"""Question: {query}
-
-Available Documentation Context:
+            # Build context and compress if needed
+            full_context = f"""Available Documentation Context:
 {chr(10).join(context_docs) if context_docs else "No specific documentation found."}
 
-{memory_context}
+{memory_context}"""
+            
+            # Compress context if using 8B model to avoid token limits
+            if model == 'llama-3.1-8b-instant':
+                # Use ACE compression if available
+                if hasattr(self, 'ace_system') and self.ace_system:
+                    full_context = self.ace_system.compress_context_for_api(full_context, max_tokens=4000)
+                else:
+                    # Simple compression: truncate if too long
+                    if len(full_context) > 8000:  # Rough token estimate
+                        full_context = full_context[:8000] + "\n\n[Context truncated to fit API limits]"
+            
+            user_prompt = f"""Question: {query}
 
-Please provide a helpful response based on the available information. If the documentation doesn't fully address the question, explain what you do know and suggest next steps."""
+{full_context}
+
+Please provide a helpful response based on the available information. Focus ONLY on the specific question asked. Do not mention unrelated problems or procedures unless directly relevant to the user's question. If the user asks about restarting systems, focus on restart procedures. If they ask about general procedures, provide general guidance. If they ask about specific problems, provide specific solutions. IMPORTANT: Do not mention the 4-cells problem unless the user specifically asks about it. If the documentation doesn't fully address the question, explain what you do know and suggest next steps."""
 
             # Generate response
             response = self.groq_client.chat.completions.create(
@@ -967,7 +980,7 @@ Please provide a helpful response based on the available information. If the doc
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=1000
+                max_tokens=4000
             )
             
             assistant_response = response.choices[0].message.content
@@ -1005,7 +1018,7 @@ if 'selected_text_model' not in st.session_state:
 
 # Main App
 def main():
-    st.title("🧠 LHCb Shifter Assistant with ACE & Vision 👁️")
+    st.title("🧠  Shifter Assistant with ACE & Vision 👁️")
     st.markdown("""
     *Autonomous self-improving AI assistant for operational staff - Upload documentation and images, get instant, context-aware help with continuous learning*
     
@@ -1193,7 +1206,7 @@ def main():
                 st.write("---")
     
     # Main content area
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["💬 Ask Questions", "👁️ Vision Analysis", "🧠 Knowledge Graph", "🧠 Memory & Context", "📄 Document Viewer", "🔄 Self-Learning", "⚙️ System Status"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["💬 Ask Questions", "👁️ Vision Analysis", "🧠 Knowledge Graph", "🧠 Memory & Context", "📄 Document Viewer", "🔄 Self-Learning", "⚙️ System Status", "🔍 ACE Insights"])
     
     with tab1:
         st.header("Ask the Shifter Assistant")
@@ -1928,7 +1941,7 @@ def main():
                 with st.spinner("Analyzing document with ACE system..."):
                     # Create analysis prompt
                     analysis_prompt = f"""
-                    Analyze this HTML document for LHCb shifter operations and provide improvement suggestions:
+                    Analyze this HTML document for  shifter operations and provide improvement suggestions:
                     
                     Document: {doc['filename']}
                     Content: {content[:2000]}...
@@ -1978,7 +1991,7 @@ def main():
             if st.button("🧠 Analyze PDF Document"):
                 with st.spinner("Analyzing PDF document with ACE system..."):
                     analysis_prompt = f"""
-                    Analyze this PDF document for LHCb shifter operations:
+                    Analyze this PDF document for  shifter operations:
                     
                     Document: {doc['filename']}
                     Content: {doc['content'][:2000]}...
@@ -2022,6 +2035,186 @@ def main():
             if 'selected_doc_for_analysis' in st.session_state:
                 del st.session_state.selected_doc_for_analysis
             st.success("Document selection cleared!")
+    
+    with tab8:
+        st.header("🔍 ACE Insights - Generator-Reflector-Curator Pipeline")
+        st.markdown("**See how the ACE framework reasons, reflects, and curates knowledge in real-time**")
+        
+        # ACE Pipeline Demo
+        st.subheader("🧪 ACE Pipeline Demonstration")
+        
+        demo_query = st.text_input(
+            "Enter a query to see ACE pipeline in action:",
+            value="What is the 4-cells problem?",
+            help="This will show you how the Generator creates deltas, Reflector analyzes them, and Curator organizes knowledge"
+        )
+        
+        if st.button("🔍 Run ACE Pipeline Demo", type="primary"):
+            with st.spinner("Running ACE Generator-Reflector-Curator pipeline..."):
+                # Run ACE pipeline demonstration
+                demo_result = st.session_state.vision_rag_system.demonstrate_ace_pipeline(demo_query)
+                
+                st.success("✅ ACE Pipeline Demo Complete!")
+                
+                # Display Generator Output
+                st.subheader("🔧 Generator Output (Grow Principle)")
+                generator_output = demo_result['generator_output']
+                st.write(f"**Deltas Generated:** {generator_output['deltas_count']}")
+                
+                if generator_output['deltas']:
+                    st.write("**Generated Deltas:**")
+                    for i, delta in enumerate(generator_output['deltas'], 1):
+                        with st.expander(f"Delta {i}: {delta['type'].title()} - {delta['content'][:50]}..."):
+                            st.write(f"**Type:** {delta['type']}")
+                            st.write(f"**Content:** {delta['content']}")
+                            st.write(f"**ID:** {delta['id']}")
+                
+                # Display Reflector Output
+                st.subheader("🔍 Reflector Output (Analysis)")
+                reflector_output = demo_result['reflector_output']
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Context Quality Score", f"{reflector_output['context_quality_score']:.2f}")
+                    st.metric("Execution Effectiveness", f"{reflector_output['execution_effectiveness']:.2f}")
+                
+                with col2:
+                    st.metric("Insights Generated", len(reflector_output['insights']))
+                    st.metric("Recommendations", len(reflector_output['recommendations']))
+                
+                if reflector_output['insights']:
+                    st.write("**Insights:**")
+                    for insight in reflector_output['insights']:
+                        st.write(f"• {insight}")
+                
+                if reflector_output['recommendations']:
+                    st.write("**Recommendations:**")
+                    for rec in reflector_output['recommendations']:
+                        st.write(f"• {rec}")
+                
+                # Display Curator Output
+                st.subheader("📚 Curator Output (Refine Principle)")
+                curator_output = demo_result['curator_output']
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Context Updates", curator_output['context_updates'])
+                with col2:
+                    st.metric("Anti-Collapse Actions", len(curator_output['anti_collapse_actions']))
+                with col3:
+                    st.metric("Organization Actions", len(curator_output['organization_actions']))
+                
+                if curator_output['anti_collapse_actions']:
+                    st.write("**Anti-Collapse Actions:**")
+                    for action in curator_output['anti_collapse_actions']:
+                        st.write(f"• {action}")
+                
+                if curator_output['organization_actions']:
+                    st.write("**Organization Actions:**")
+                    for action in curator_output['organization_actions']:
+                        st.write(f"• {action}")
+        
+        # Real-time ACE Metrics
+        st.subheader("📊 Real-time ACE Metrics")
+        
+        ace_metrics = st.session_state.vision_rag_system.get_ace_metrics()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Generation Cycles", ace_metrics.get('generation_cycles', 0))
+            st.metric("Deltas Generated", ace_metrics.get('deltas_generated_total', 0))
+        with col2:
+            st.metric("Reflection Cycles", ace_metrics.get('reflection_cycles', 0))
+            st.metric("Insights Extracted", ace_metrics.get('insights_extracted_total', 0))
+        with col3:
+            st.metric("Curation Cycles", ace_metrics.get('curation_cycles', 0))
+            st.metric("Context Updates", ace_metrics.get('context_updates_total', 0))
+        with col4:
+            st.metric("Anti-Collapse Actions", ace_metrics.get('anti_collapse_actions_total', 0))
+            st.metric("Knowledge Growth Rate", f"{ace_metrics.get('learning_metrics', {}).get('knowledge_growth_rate', 0):.2f}")
+        
+        # ACE Pipeline Status
+        st.subheader("🎯 ACE Pipeline Status")
+        status = st.session_state.vision_rag_system.get_ace_status()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("**🔧 Generator Status**")
+            st.success(f"Status: {status.get('pipeline_components', {}).get('generator', {}).get('status', 'unknown')}")
+            st.info(f"Cycles: {status.get('pipeline_components', {}).get('generator', {}).get('generation_cycles', 0)}")
+            st.info(f"History: {status.get('pipeline_components', {}).get('generator', {}).get('history_size', 0)} entries")
+        
+        with col2:
+            st.markdown("**🔍 Reflector Status**")
+            st.success(f"Status: {status.get('pipeline_components', {}).get('reflector', {}).get('status', 'unknown')}")
+            st.info(f"Cycles: {status.get('pipeline_components', {}).get('reflector', {}).get('reflection_cycles', 0)}")
+            st.info(f"History: {status.get('pipeline_components', {}).get('reflector', {}).get('history_size', 0)} entries")
+        
+        with col3:
+            st.markdown("**📚 Curator Status**")
+            st.success(f"Status: {status.get('pipeline_components', {}).get('curator', {}).get('status', 'unknown')}")
+            st.info(f"Cycles: {status.get('pipeline_components', {}).get('curator', {}).get('curation_cycles', 0)}")
+            st.info(f"History: {status.get('pipeline_components', {}).get('curator', {}).get('history_size', 0)} entries")
+        
+        # Recent ACE Activity
+        st.subheader("📈 Recent ACE Activity")
+        
+        if hasattr(st.session_state.vision_rag_system, 'execution_traces') and st.session_state.vision_rag_system.execution_traces:
+            st.write("**Recent Execution Traces:**")
+            for i, trace in enumerate(reversed(st.session_state.vision_rag_system.execution_traces[-5:]), 1):
+                with st.expander(f"Trace {i}: {trace.query[:50]}..."):
+                    st.write(f"**Query:** {trace.query}")
+                    st.write(f"**Execution Time:** {trace.execution_time:.2f}s")
+                    st.write(f"**Success Indicators:** {', '.join(trace.success_indicators) if trace.success_indicators else 'None'}")
+                    st.write(f"**Failure Indicators:** {', '.join(trace.failure_indicators) if trace.failure_indicators else 'None'}")
+                    st.write(f"**Timestamp:** {trace.timestamp}")
+        else:
+            st.info("No execution traces yet. Ask some questions to see ACE in action!")
+        
+        # Expert Knowledge Retrieval
+        st.subheader("🧠 Expert Knowledge Retrieval")
+        
+        test_query = st.text_input(
+            "Test expert knowledge retrieval:",
+            value="4-cells problem",
+            help="See what expert knowledge the system has learned"
+        )
+        
+        if st.button("🔍 Retrieve Expert Knowledge"):
+            expert_knowledge = st.session_state.vision_rag_system._retrieve_expert_knowledge(test_query)
+            
+            if expert_knowledge:
+                st.success("✅ Expert knowledge found!")
+                st.markdown(f"**Retrieved Knowledge:** {expert_knowledge}")
+            else:
+                st.info("No expert knowledge found for this query. Provide some expert feedback to build the knowledge base!")
+        
+        # ACE Learning Indicators
+        st.subheader("🎯 ACE Learning Indicators")
+        
+        if 'last_text_response' in st.session_state:
+            response_data = st.session_state.last_text_response
+            ace_metrics = response_data.get('ace_metrics', {})
+            
+            if ace_metrics.get('ace_pipeline_executed'):
+                st.success("✅ ACE Pipeline was executed in the last query!")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Generation Cycles", ace_metrics.get('generation_cycles', 0))
+                with col2:
+                    st.metric("Reflection Cycles", ace_metrics.get('reflection_cycles', 0))
+                with col3:
+                    st.metric("Curation Cycles", ace_metrics.get('curation_cycles', 0))
+                
+                if ace_metrics.get('expert_knowledge_used'):
+                    st.success("🧠 Expert knowledge was used in the response!")
+                else:
+                    st.info("💡 No expert knowledge was used. Provide expert feedback to enhance responses!")
+            else:
+                st.warning("⚠️ ACE Pipeline was not executed in the last query.")
+        else:
+            st.info("No recent queries. Ask a question to see ACE learning indicators!")
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for LHCb Shifter Assistant with Agentic Context Engineering (ACE)
+Test script for  Shifter Assistant with Agentic Context Engineering (ACE)
 Verifies all components are working correctly and provides diagnostic information.
 """
 
@@ -244,7 +244,7 @@ def run_ace_demo():
 def generate_setup_report():
     """Generate comprehensive setup report"""
     print("\n" + "="*60)
-    print("🧠 LHCb Shifter Assistant with ACE - Setup Report")
+    print("🧠  Shifter Assistant with ACE - Setup Report")
     print("="*60)
     
     # Test all components

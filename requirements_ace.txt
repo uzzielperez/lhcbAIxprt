@@ -1,4 +1,4 @@
-# Core dependencies for LHCb Shifter Assistant with ACE
+# Core dependencies for  Shifter Assistant with ACE
 streamlit>=1.28.0
 pandas>=1.5.0
 numpy>=1.24.0

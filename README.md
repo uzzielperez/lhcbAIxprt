@@ -1,6 +1,6 @@
-# 🔧 LHCb AI Expert - Shifter Assistant RAG System
+# 🔧  AI Expert - Shifter Assistant RAG System
 
-An intelligent RAG (Retrieval-Augmented Generation) system designed to assist LHCb shifters with real-time, context-aware help based on uploaded documentation and procedures.
+An intelligent RAG (Retrieval-Augmented Generation) system designed to assist  shifters with real-time, context-aware help based on uploaded documentation and procedures.
 
 The noob (in this case me!) can do the following: 
 - **Upload twiki html files and some relevant e-logs** and process the documents
@@ -16,11 +16,11 @@ OK! Now just need to stress test this.
 
 ## 🧠 Agentic Context Engineering (ACE) Framework
 
-Shift operations at CERN's LHCb experiment are challenged by vast, dynamically evolving documentation, which hinders rapid information access for novice shifters and risks operational errors. We introduce **Agentic Context Engineering (ACE)**, a novel framework that enables large language models (LLMs) to autonomously self-improve by iteratively evolving contextual knowledge and refining their Retrieval-Augmented Generation (RAG) pipelines. 
+Shift operations at CERN's  experiment are challenged by vast, dynamically evolving documentation, which hinders rapid information access for novice shifters and risks operational errors. We introduce **Agentic Context Engineering (ACE)**, a novel framework that enables large language models (LLMs) to autonomously self-improve by iteratively evolving contextual knowledge and refining their Retrieval-Augmented Generation (RAG) pipelines. 
 
 Leveraging open-source models like LLaMA 3.x hosted on Groq for efficient inference, ACE dynamically retrieves, summarizes, and updates shift documentation based on real-time human expert feedback. A multimodal extension, powered by GPT-4o, incorporates vision capabilities to analyze plots, dashboards, and visual data for enhanced reasoning.
 
-Through this integration of agentic context evolution and adaptive RAG mechanisms, ACE delivers a reliable, trustworthy AI assistant that continuously adapts to LHCb's operational needs, accelerating decision-making, reducing training overhead, and improving overall experiment reliability. Future evaluations will assess its impact on shift efficiency and error rates in live deployments.
+Through this integration of agentic context evolution and adaptive RAG mechanisms, ACE delivers a reliable, trustworthy AI assistant that continuously adapts to 's operational needs, accelerating decision-making, reducing training overhead, and improving overall experiment reliability. Future evaluations will assess its impact on shift efficiency and error rates in live deployments.
 
 ## ✨ Features
 
@@ -261,5 +261,5 @@ For issues or improvements:
 
 ---
 
-*Built for LHCb operational excellence and shifter empowerment* 🔬⚡
+*Built for  operational excellence and shifter empowerment* 🔬⚡
 

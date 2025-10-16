@@ -43,14 +43,14 @@
 - **Content Organization**: Structure and flow analysis
 - **Missing Procedures**: Identifies gaps in documentation
 - **Clarity Improvements**: Language and presentation suggestions
-- **Operational Relevance**: LHCb-specific operational assessment
+- **Operational Relevance**: -specific operational assessment
 
 ## 🧠 **ACE-Powered Analysis**
 
 ### **Intelligent Analysis:**
 - **Expert Knowledge Integration**: Uses stored expert knowledge for analysis
 - **Learning Indicators**: Shows when ACE system applies learning
-- **Context-Aware**: Considers LHCb operational context
+- **Context-Aware**: Considers  operational context
 - **Continuous Improvement**: Learns from analysis feedback
 
 ### **Analysis Process:**
@@ -127,7 +127,7 @@ if st.button("👁️ View", key=f"view_{i}"):
 - **Quality Improvement**: Identifies areas for enhancement
 - **Structure Optimization**: Suggests better organization
 - **Content Gaps**: Finds missing information
-- **Operational Relevance**: Ensures LHCb-specific focus
+- **Operational Relevance**: Ensures -specific focus
 
 ## 🚀 **Future Enhancements**
 

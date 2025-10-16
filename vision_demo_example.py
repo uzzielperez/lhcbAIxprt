@@ -69,7 +69,7 @@ def analyze_image_with_vision_llm(image_base64, query, api_key):
 
 def main():
     """Demo the vision capabilities"""
-    print("🔧👁️ LHCb AI Expert - Vision RAG Demo")
+    print("🔧👁️  AI Expert - Vision RAG Demo")
     print("=" * 50)
     
     # Check for API key
